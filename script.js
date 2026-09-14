@@ -11,6 +11,7 @@ try {
 let lastPrintQuantity = 1;
 let accumulatedCopies = 0;
 let isGeneratingPreview = false; // Flag to prevent multiple simultaneous generations
+let isPrinting = false; // Flag to prevent concurrent print submissions
 let previewDebounceTimer = null; // Timer for debouncing preview generation
 
 // Language Translations
@@ -783,14 +784,23 @@ function generateQRCode(text, size = 120) {
             // Create QR code using the QRCode library API
             const errorCorrectionLevel = text.length > QR_DENSITY_WARNING_THRESHOLD ? QRCode.CorrectLevel.M : QRCode.CorrectLevel.H;
             
-            const qr = new QRCode(tempDiv, {
-                text: text,
-                width: size,
-                height: size,
-                colorDark: '#000000',
-                colorLight: '#FFFFFF',
-                correctLevel: errorCorrectionLevel
-            });
+            try {
+                const qr = new QRCode(tempDiv, {
+                    text: text,
+                    width: size,
+                    height: size,
+                    colorDark: '#000000',
+                    colorLight: '#FFFFFF',
+                    correctLevel: errorCorrectionLevel
+                });
+            } catch (constructError) {
+                // The constructor can throw (bad text/options). Without this the
+                // tempDiv appended above would stay in the DOM for the life of
+                // the page, once per failed generation.
+                document.body.removeChild(tempDiv);
+                reject(constructError);
+                return;
+            }
             
             // Wait for QR code to be generated
             setTimeout(() => {
@@ -909,6 +919,13 @@ function updateCopyDisplay() {
 
 // --- Silent Printing Functions ---
 async function printAccumulatedCopies() {
+    // In-flight guard: a second click (or the keyboard shortcut) while the first
+    // print is still pending opened a second print window and submitted the same
+    // batch again, producing duplicate labels.
+    if (isPrinting) {
+        return;
+    }
+
     const sscc = document.getElementById('ssccInput').value.trim();
     
     if (!isValidSSCC(sscc)) {
@@ -920,6 +937,7 @@ async function printAccumulatedCopies() {
         return;
     }
     
+    isPrinting = true;
     showLoading();
     updatePrintStatus('printing');
     
@@ -960,6 +978,7 @@ async function printAccumulatedCopies() {
         showError(translations[currentLanguage]['print-error']);
         updatePrintStatus('error');
     } finally {
+        isPrinting = false;
         hideLoading();
     }
 }
