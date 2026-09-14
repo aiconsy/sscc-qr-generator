@@ -1,4 +1,5 @@
 # SSCC QR Code Generator
+**Built with: deepseek-v4.1-flash via Hermes Agent on September 14, 2026**
 
 A high-performance web application for generating QR code stickers from SSCC (Serial Shipping Container Code) numbers. Designed for warehouse environments with 1000+ daily operations across 20+ users.
 
