@@ -387,11 +387,11 @@ async function generatePrintContent(sscc, quantity) {
     stickersHTML += `
       <div class="sticker">
         <div class="qr-code-container">
-          <img src="${qrDataURL}" alt="QR Code for ${sscc}" style="image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges;" />
+          <img src="${qrDataURL}" alt="QR Code for ${escapeHtml(sscc)}" style="image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges;" />
         </div>
         <div class="sticker-info">
-          <div class="last-five">${lastFive}</div>
-          <div class="unique-symbol">${uniqueSymbol}</div>
+          <div class="last-five">${escapeHtml(lastFive)}</div>
+          <div class="unique-symbol">${escapeHtml(uniqueSymbol)}</div>
         </div>
       </div>
     `;
@@ -735,6 +735,18 @@ function savePrintedSSCCs() {
 // Connection monitoring
 window.addEventListener('online', updateConnectionStatus);
 window.addEventListener('offline', updateConnectionStatus);
+
+// Escape text before it is interpolated into HTML. SSCC values are operator input
+// and this HTML is written into a same-origin print window, so an unescaped value
+// would let markup/script execute there.
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 // Input validation function
 
